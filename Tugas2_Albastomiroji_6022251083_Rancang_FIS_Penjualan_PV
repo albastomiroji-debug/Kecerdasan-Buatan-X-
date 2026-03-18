@@ -1,0 +1,78 @@
+#Rancang Fuzzy Inference System (FIS) Penjualan PV
+
+def fungsi_keanggotaan_area(x):
+    # Simulasi sederhana derajat keanggotaan (skala 0-100)
+    mu = {'sedikit': 0, 'sedang': 0, 'banyak': 0}
+    if x <= 30:
+        mu['sedikit'] = 1
+    elif 30 < x < 50:
+        mu['sedikit'] = (50 - x) / 20
+        mu['sedang'] = (x - 30) / 20
+    elif 50 <= x <= 70:
+        mu['sedang'] = 1
+    elif 70 < x < 90:
+        mu['sedang'] = (90 - x) / 20
+        mu['banyak'] = (x - 70) / 20
+    else:
+        mu['banyak'] = 1
+    return mu
+
+def fungsi_keanggotaan_daya(y):
+    # Simulasi sederhana derajat keanggotaan (skala 0-5000)
+    mu = {'kecil': 0, 'menengah': 0, 'besar': 0}
+    if y <= 1500:
+        mu['kecil'] = 1
+    elif 1500 < y < 2500:
+        mu['kecil'] = (2500 - y) / 1000
+        mu['menengah'] = (y - 1500) / 1000
+    elif 2500 <= y <= 3500:
+        mu['menengah'] = 1
+    elif 3500 < y < 4500:
+        mu['menengah'] = (4500 - y) / 1000
+        mu['besar'] = (y - 3500) / 1000
+    else:
+        mu['besar'] = 1
+    return mu
+
+def hitung_fuzzy_sugeno(area_val, daya_val):
+    # 1. Fuzzifikasi
+    mu_area = fungsi_keanggotaan_area(area_val)
+    mu_daya = fungsi_keanggotaan_daya(daya_val)
+    
+    # 2. Definisi Output Singleton (Juta Rp)
+    z = {'Basic': 10, 'Premium': 25, 'Platinum': 50}
+    
+    # 3. Rule Base & Inferensi (Mencari Alpha Predikat)
+    # Kita buat list untuk menyimpan (alpha * z) dan (alpha)
+    numerator = 0
+    denominator = 0
+    
+    rules = [
+        (mu_area['sedikit'], mu_daya['kecil'], z['Basic']),
+        (mu_area['sedikit'], mu_daya['menengah'], z['Basic']),
+        (mu_area['sedikit'], mu_daya['besar'], z['Premium']), # Rule Wajib
+        (mu_area['sedang'], mu_daya['kecil'], z['Basic']),
+        (mu_area['sedang'], mu_daya['menengah'], z['Premium']),
+        (mu_area['sedang'], mu_daya['besar'], z['Platinum']),
+        (mu_area['banyak'], mu_daya['kecil'], z['Premium']),
+        (mu_area['banyak'], mu_daya['menengah'], z['Platinum']),
+        (mu_area['banyak'], mu_daya['besar'], z['Platinum']),
+    ]
+    
+    for a_area, a_daya, output_val in rules:
+        alpha = min(a_area, a_daya)
+        numerator += alpha * output_val
+        denominator += alpha
+        
+    # 4. Defuzzifikasi (Weighted Average)
+    return numerator / denominator if denominator != 0 else 0
+
+# SIMULASI
+input_area = 45
+input_daya = 2000
+hasil = hitung_fuzzy_sugeno(input_area, input_daya)
+
+print(f"--- Simulasi FIS Sugeno ---")
+print(f"Input Luas Area: {input_area} m2")
+print(f"Input Daya: {input_daya} Watt")
+print(f"Hasil Estimasi Harga: Rp {hasil:.2f} Juta")
